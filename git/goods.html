@@ -1,0 +1,491 @@
+#@layout()
+#define main()
+<meta content="text/html; charset=UTF-8">
+<style>
+	#tittle{
+		text-align:center;
+		margin:20px auto;
+	}
+	span{
+		color:red;
+	}
+	.dialog_box{
+    	background-color: #fdecec;
+    	border: 1px solid #f57676;
+/*     	background-image: url(../images/ok.png);
+		background-repeat: no-repeat;
+    	background-position:10px 10px; */
+
+	}
+
+ 	#tooltip{
+    	width: 30%;
+    	height:80px;
+    	line-height: 80px;
+   	 	padding-left: 40px;
+    	font-size: 16px;
+    	display: none;
+    	margin:20px auto;
+    	text-align:center;
+      	position: absolute;
+    	z-index: 100;
+     	left: 35%;
+    	top: 20%; 
+
+	} 
+ 	#tooltip{
+/*     	float: right;
+    	margin-right: 10px;
+    	margin-top: 10px; */
+    	cursor: pointer;
+	}
+	.table_box{
+		width:100%;
+		margin-top:20px;
+		padding:0px;
+	}
+	.list>thead>tr>th{
+		text-align:center;
+	}
+	.list>tbody>tr>td{
+		text-align:center;
+	}
+	#pageId>a{
+		text-decoration:none;
+		cursor: pointer;
+	}
+	.btn-search{
+		width:50px;
+		cursor: pointer;
+	}
+	input{
+		width:200px;
+	}
+	button{
+		width:8px;
+		height:8px;
+		margin:0px;
+		padding:0px;
+		border:0px solid;
+		background-color:#EEE;
+		cursor: pointer;
+	}
+	
+	.order_ul{
+		margin-left: 95px;
+  		margin-top: -34px;
+	} 
+	
+/* 	.order_ul{
+		position: absolute;
+  		left: 1430px;
+  		top: 263px;
+	} */
+</style>
+<script>
+	$(document).ready(function(){	
+/* 		$("form").submit(function(){
+			//判断业务数据
+			if($("#code").val()==null||$("#code").val().length<=0&&$("#weight").val()==null||$("#weight").val().length<=0){
+				return false;
+			}
+			//防止用户直接提交
+  	  		if((isNaN($("#code")[0].value))||(isNaN($("#weight")[0].value))){
+				console.log($("#code")[0].value);
+				return false;
+			}    
+			return true;
+		}); */
+		
+		var focusflag = false;
+		//第一文本框获得焦点,选择文本
+		$("#code").focus(function(){
+			console.log(111111);
+			$(this).select();
+			focusflag = true;
+		});	
+		
+		//获得焦点时选择文本
+		$("#weight").focus(function(){
+			$(this).select();
+			focusflag = false;
+		});
+		
+		//移出文本框时判断业务数据并提示用户
+		$("#code").focusout(function() {
+			//var url = '/blog/checkCode';
+			if($("#code").val()==null||$("#code").val().length<=0){
+				$("span:first").html("请扫描!");
+			}else{
+				$("span:first").empty();
+			}
+		});
+		
+		//移出文本框时判断业务数据并提示用户
+		$("#weight").focusout(function(){
+			//var url = '/blog/checkWeight';
+			if($("#weight").val()==null||$("#weight").val().length<=0){
+				$("span:eq(1)") .html("请称重!");
+			}else{
+				$("span:eq(1)").empty();
+			}
+		});
+		
+		//点下键盘时清空原先的文本内提示,只执行一次对后续不影响
+/* 		$("#code").one('keydown',function(){
+			$("#code").val(null);
+		}); */
+		
+
+		//左击文本框时清空原先提示
+/* 		$("#code").click(function(){
+			if($("#code").val()=="请扫描二维码"){
+				$("input")[0].select();
+		//		$("#code").val(null);
+			}
+		}); */
+		
+		//手动点击提示框隐藏
+		$("#tooltip").on('click',function(){
+			$(this)[0].style.display='none';
+		});
+		
+		//点击查询并把当前页页码归1
+		$(".btn-search").click(function(){
+			$("#pageId").data("pageCurrent",1);
+			doFindObjects();
+		});
+				
+		//点击查询文本框时默认选中文本,方便二次查询
+		$("#searchCode").on("click",function(){
+			$(this).select();
+		});
+		
+		//根据对应正三角按键点击进行绑定参数
+		$(".asc_order").click(function(){
+			$(".table_box").data("order_mode","asc");
+			doFindObjects();
+		});
+		
+		//根据对应倒三角按键点击进行绑定参数
+		$(".desc_order").click(function(){
+			$(".table_box").data("order_mode","desc");
+			doFindObjects();
+		});
+		
+		//给数据表的tr绑定点击事件弹出模态框
+		$(".list").on("click","tr",doShowModalBox);
+		
+		//绑定点击事件关闭模态框
+		$(".close").click(function(){
+			$("#modal_dialog")[0].style.display = "none";
+			$("#remark").val(null);
+			$(".btn_refresh").removeData("id");
+		});
+		//点击刷新时更新内容
+		$(".btn_refresh").click(function(){
+			doShowModalBox();
+		});
+		
+		//绑定点击事件保存修改信息
+		$(".btn_save").on("click",doUpdateById);
+		
+	    var flag = false;
+	    var mouseLeft;
+	    var mouseTop;
+	    $('#modal_dialog').mousedown(function(event){  
+	        var downX=event.pageX;		//获取鼠标坐标
+	        console.log("downX"+downX);
+	        var downY=event.pageY;
+	        console.log("downY"+downY);
+	        var offsetLeft=$('#modal_dialog').position().left    //获取模态框的left值
+	        console.log("offsetLeft"+offsetLeft);
+	        var offsetTop =$('#modal_dialog').position().top
+	        console.log("offsetTop"+offsetTop);
+	        mouseLeft = downX-offsetLeft;		//计算鼠标在弹出框中的位置,相对位置
+	        console.log("mouseLeft"+mouseLeft);
+	        mouseTop = downY-offsetTop;
+	        console.log("mouseTop"+mouseTop);
+	        flag=true;
+	    });
+	    
+		$(document).mousemove(function(event){  
+	        
+		    if(flag==true){
+		        var moveX=event.clientX;       //获取鼠标坐标
+		        console.log("moveX"+moveX);
+		        var moveY=event.clientY; 
+		        console.log("moveY"+moveY);
+		        var moveLeft=moveX-mouseLeft;  //获取移动过程中弹出框的left值
+		        console.log("moveLeft"+moveLeft);
+		        var moveTop =moveY-mouseTop;
+		        console.log("moveTop"+moveTop);
+		        var maxX=$(document).width() -$('#modal_dialog').outerWidth();
+		        console.log("maxX"+maxX);
+	//	        var maxY=$(document).height()-$('#modal_dialog').outerHeight();
+	//	        console.log("maxY"+maxY);
+		        //范围限定
+		        moveLeft=Math.min(Math.max(0,moveLeft),maxX);
+		        console.log("moveLeft"+moveLeft);
+		        moveTop =Math.min(Math.max(0,moveTop),1500);
+		        console.log("moveTop"+moveTop);
+		        //用样式属性值去定位现在的位置
+		        $('#modal_dialog').css({'left':moveLeft,'top':moveTop,'backgroud':'red'});
+		      }
+		        
+		 });
+
+		 $(document).mouseup(function(event){  	
+		     flag=false;
+		 });
+		 
+		 $(document).keydown(function(e){	
+			 if (!e) var e = window.event;
+			 if (e.keyCode) keyCode = e.keyCode;  
+			 	else if (e.which) keyCode = e.which;
+			//回车事件满足条件时提交扫描数据
+			 if(keyCode==13&&focusflag==false){ 
+				var url = '/blog/addObject';
+				var param = {"goods.code":$("#code").val(),"goods.weight":$("#weight").val()};
+				 //window.event.returnValue = false;
+				if($("#code").val()==null||$("#code").val().length<=0&&$("#weight").val()==null||$("#weight").val().length<=0){
+					return false;
+				}
+				//防止用户直接提交
+	  	  		if((isNaN($("#code")[0].value))||(isNaN($("#weight")[0].value))){
+					console.log($("#code")[0].value);
+					return false;
+				} 
+				 $.post(url,param,function(result){
+				   	console.log(result.state);
+				    console.log(result.message);
+				    $("#tooltip").html(result.message);
+				    //显示提示框
+				    $("#tooltip")[0].style.display = "block";
+				    if(result.state==1){
+				    	doFindObjects();
+				    	//如果扫描成功执行定时隐藏提示框，失败不定时隐藏，手动隐藏
+				    	doTimerHide();
+				    	//刷新扫描框
+				    	doRefreshText();
+				    }else{
+				    	alert(result.message);
+				    }
+				 });
+			//不满足切换文本框
+			}else if(keyCode==13){
+				moveNextText();
+			}
+		});
+		
+		//根据特定条件显示包裹信息
+		doFindObjects(); 
+		//页面加载完成后选中第一文本
+		$("#code").focus();
+	});
+	
+	function doUpdateById(){
+		var url = '/blog/doUpdateById';
+		//获得对象参数
+		var param = getObjectParam();
+		console.log(param);
+		$.post(url,param,function(result){
+			if(result.state==1){
+				$("#tooltip").html("保存成功");
+				//显示提示框
+				$("#tooltip")[0].style.display = "block";
+				doFindObjects();
+				doTimerHide();
+			}else{
+				alert(result.message);
+			}
+		});
+	}
+	//封装对象参数
+	function getObjectParam(){
+		var param = {
+				"goods.id":$("#gId").val(),
+				"goods.code":$("#gCode").val(),
+				"goods.weight":$("#gWeight").val(),
+				"goods.weightime":$("#gWeightime").val(),
+				"goods.remark":$("#remark").val()
+				};
+		return param;
+	}
+	//弹出模态框
+	function doShowModalBox(){
+		//在更新键上绑定id，便于根据id刷新操作
+		$(".btn_refresh").data("id",$(this).data("id"));
+		console.log(111);
+		console.log($(".btn_refresh").data("id"));
+		console.log(this);
+		var url = '/blog/doFindById';
+		//根据不同对象的调用，this具体的对象会有变化，下面需做判断
+		var param = {"id":$(this).data("id")};
+		//如果更新键上有id值，就附值给参数id
+		if($(".btn_refresh").data("id")){
+			param.id = $(".btn_refresh").data("id");
+		}
+		console.log(param);
+		$.getJSON(url,param,function(result){
+			if(result.state==1){
+				doShowDataToBox(result.data);
+				$("#modal_dialog")[0].style.display = "block";
+			}else{
+				alert(result.message);
+			}
+		});
+	}
+	
+	//把数据绑定到模态框
+	function doShowDataToBox(object){
+		$("#gId").val(object.id);
+		$("#gCode").val(object.code);
+		$("#gWeight").val(object.weight);
+		$("#gWeightime").val(object.weightime);
+		$("#remark").val(object.remark);
+	}
+	
+	//如果隐藏提示框(即扫描成功)，就刷新文本框,第一文本框获得焦点
+	function doRefreshText(){
+		$("#code").focus().val("请扫描二维码").select();;
+		$("#weight").val("请称重");
+		focusflag = true;
+	}
+	
+	//设置定时隐藏提示框
+	function doTimerHide(){
+		var int=setInterval(function(){
+			$("#tooltip")[0].style.display='none';
+		},2000);
+	}
+	
+	//根据特定条件查询包裹信息函数
+	function doFindObjects(){
+		var url = '/blog/doFindObjects';
+		var pageCurrent=$("#pageId").data("pageCurrent");
+		var orderMode=$(".table_box").data("order_mode");
+		//如果当前页上没有数据，就设置为1
+		if(!pageCurrent){
+			pageCurrent=1;
+		}
+		//code为编号，pageNumber为当前页数,orderMode为排序方式
+		var param = {"code":$("#searchCode").val(),"pageNumber":pageCurrent,"orderMode":orderMode};
+		$.getJSON(url,param,function(result){
+			if(result.state==1){
+				console.log(result);
+				console.log(result.data);
+				doShowTableObjects(result.data.list);
+				setPagination(result.data);
+				console.log($(".table_box").data("order_mode"));
+				//删除对象上的值，避免二次查询的时候影响数据
+				$(".table_box").removeData("order_mode"); 
+				console.log($(".table_box").data("order_mode"));
+			}else{
+				alert(result.message)
+			}
+		});
+	}
+		
+	
+	//将数据写入tbody
+	function doShowTableObjects(list){
+		console.log(list);
+		var tb = $(".list>tbody");
+		 tb.empty();
+		 var temp='<td>[id]</td>'
+		       +'<td>[code]</td>'
+		       +'<td>[weight]</td>'
+		       +'<td>[weightime]</td>'
+		      // +'<td><input type="button"  class="btn-update" value="修改"></td>'
+			   //追加新的包裹信息
+			 for(var i in list){
+			  var tr=$('<tr></tr>');
+			//绑定id,便于后续获得此id进行修改等操作
+			  tr.data("id",list[i].id);
+	          tr.append(temp
+	         .replace('[id]',list[i].id)
+	         .replace('[code]',list[i].code)		        
+	         .replace('[weight]',list[i].weight)
+	         .replace('[weightime]',list[i].weightime)
+	          );
+	         tb.append(tr);
+			 }
+	}
+	
+	//输入完成时切换文本框
+	function moveNextText(){  
+	          
+	    if($("#code").val()==null&&$("#code").val().length<=0){  
+	        return; 
+	    }  
+	  	$("#weight").focus();
+	  	focusflag = false;
+	}
+
+</script>
+
+<!-- 扫码框 -->
+<fieldset id="tittle"><legend>包裹扫描</legend>
+	<div>
+		<form method="post">
+			包裹编号:<input id="code" type="text" name="goods.code" value="请扫描二维码"/>
+			<span></span><br><br>
+			包裹重量:<input id="weight" type="text" name="goods.weight" value="请称重"/>
+			<span></span><br>
+			<!-- <input type="submit"  id="sub" value="提交"/> -->
+		</form>
+	</div>
+	
+	<!-- 提示框 -->
+	<div id="tooltip" class="dialog_box">
+		<!-- <img src="../images/close.png" onclick="this.parentNode.style.display='none';" /> -->
+   	</div>   
+</fieldset>
+
+<!-- 操作框 -->
+<div class="searth_box">
+	<input type="text" id="searchCode" placeholder="包裹编号">
+	<input type="button" class="btn-search"  value="查询"/>
+</div>
+
+<!-- 信息框 -->
+   	<div class="table_box">
+		<table class="list">
+			<thead>
+				<tr>
+					<th width="4%">包裹id</th>
+					<th width="20%">包裹编号</th>
+					<th width="10%">包裹重量</th>
+					<th id ="th" width="15%">扫描时间
+						<ul class="order_ul">
+							<li>
+								<button class="asc_order">▲</button>
+								
+							</li>
+							<li>
+								<button class="desc_order">▼</button>
+							</li>
+						</ul>
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- 包裹信息展示 -->
+			</tbody>
+		</table>
+	</div>
+	
+	<!-- 分页信息 -->
+	<div>
+		<span id="pageId">
+			<a class="first">首页</a>&nbsp;
+			<a class="pre">上一页</a>&nbsp;
+			<a class="next">下一页</a>&nbsp;
+			<a class="last">尾页</a>&nbsp;
+			<a class="pageCount">总页数(1)</a>&nbsp;
+			<a class="pageCurrent">当前页(1)</a>&nbsp;
+			<a class="totalRow">总记录数(0)</a>
+		</span>
+	</div>
+#end
