@@ -4,3 +4,4 @@ git checkout -b dev
 git branch
 git branch id dev
 git merge dev 
+test stage master
