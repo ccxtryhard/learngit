@@ -1,2 +1,6 @@
 git rm test.txt
 git rm test.txt
+git checkout -b dev
+git branch
+git branch id dev
+git merge dev 
