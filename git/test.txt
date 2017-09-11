@@ -1,1 +1,2 @@
 git rm test.txt
+git rm test.txt
