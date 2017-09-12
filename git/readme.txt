@@ -8,4 +8,5 @@ Creating a new branch is quick.
 git checkout -b dev.
 git checkout -d dev.
 Creating a new branch is quick AND simple.
-git log --pretty=oneline --abbrev-commit
+git log --pretty=oneline --abbrev-commit.
+git is good.
