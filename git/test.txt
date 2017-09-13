@@ -4,3 +4,5 @@ git checkout -b dev
 git branch
 git branch id dev
 git merge dev 
+git test
+git test
